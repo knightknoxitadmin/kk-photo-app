@@ -30,6 +30,9 @@
   const countdownEl = document.getElementById('countdown');
   const flashEl = document.getElementById('flash');
   const statusMsg = document.getElementById('statusMsg');
+  const camStart = document.getElementById('camStart');
+  const camStartBtn = document.getElementById('camStartBtn');
+  const camStartMsg = document.getElementById('camStartMsg');
   const filtersEl = document.getElementById('filters');
   const propsEl = document.getElementById('props');
   const propOverlay = document.getElementById('propOverlay');
@@ -72,12 +75,17 @@
     buildFilterChips();
     buildPropChips();
     wireTrayAndFlash();
-    await startCamera();
     wireControls();
     // attach face-tracking props to the live preview and start loading the model in the background
     if (window.BoothProps) {
       BoothProps.attachPreview(video, propOverlay, () => facingMode);
       BoothProps.load();
+    }
+    // in-app browsers block the camera outright — tell the user up front
+    if (isInAppBrowser()) {
+      showCamStart(cameraErrorMessage(null));
+    } else {
+      await startCamera();
     }
   }
 
@@ -214,10 +222,50 @@
   }
 
   // ---- Camera ----
+  function isInAppBrowser() {
+    const ua = navigator.userAgent || '';
+    return (
+      /FBAN|FBAV|Instagram|Line\/|Twitter|LinkedInApp|LinkedIn|MicroMessenger|WhatsApp|Snapchat|TikTok|Teams|Outlook|GSA/i.test(ua) ||
+      /; wv\)/.test(ua) // generic Android WebView
+    );
+  }
+
+  function cameraErrorMessage(err) {
+    if (isInAppBrowser()) {
+      return 'Open this page in Safari or Chrome to use the camera — tap the ••• menu, then “Open in browser”. In-app browsers block camera access.';
+    }
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      return 'This browser can’t open the camera. Please use Safari or Chrome over the https:// link.';
+    }
+    const n = err && err.name;
+    if (n === 'NotAllowedError' || n === 'SecurityError') {
+      return 'Camera access is blocked. Tap the button to allow it — or enable Camera for this site in your browser settings, then retry.';
+    }
+    if (n === 'NotFoundError' || n === 'OverconstrainedError') {
+      return 'No camera was found. Try the flip button, or use a device with a camera.';
+    }
+    if (n === 'NotReadableError') {
+      return 'The camera is in use by another app. Close other camera apps, then tap to retry.';
+    }
+    return 'Could not start the camera. Make sure you opened the https:// link in Safari or Chrome, then tap to retry.';
+  }
+
+  function showCamStart(msg) {
+    camStartMsg.textContent = msg;
+    camStartBtn.textContent = '📷 Tap to start camera';
+    camStart.hidden = false;
+  }
+  function hideCamStart() {
+    camStart.hidden = true;
+  }
+
   async function startCamera() {
     stopCamera();
     showStatus('');
     try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new DOMException('getUserMedia unavailable', 'NotSupportedError');
+      }
       stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode, width: { ideal: 1280 }, height: { ideal: 1707 } },
         audio: false
@@ -225,11 +273,10 @@
       video.srcObject = stream;
       video.classList.toggle('mirror', facingMode === 'user');
       await video.play().catch(() => {});
+      hideCamStart();
     } catch (err) {
-      showStatus(
-        'Camera unavailable. Allow camera access in your browser, and make sure the site is opened over HTTPS.'
-      );
-      console.error(err);
+      console.error('Camera start failed:', err);
+      showCamStart(cameraErrorMessage(err));
     }
   }
 
@@ -254,6 +301,7 @@
     });
     retakeBtn.addEventListener('click', resetToLive);
     uploadBtn.addEventListener('click', uploadPhoto);
+    camStartBtn.addEventListener('click', startCamera);
   }
 
   async function onShutter() {
