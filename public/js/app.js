@@ -56,6 +56,9 @@
   let currentFilter = 'none';
   let countdownEnabled = true;
   let flashMode = 'auto';         // 'auto' | 'on' | 'off'
+
+  // Face-tracking props are hidden for now (needs more work). Flip to true to re-enable.
+  const PROPS_ENABLED = false;
   let capturedDataUrl = null;
   let photoLogoImage = null;      // preloaded grey logo, stamped in the white Polaroid strip
   let busy = false;
@@ -73,11 +76,11 @@
   async function init() {
     await loadBranding();
     buildFilterChips();
-    buildPropChips();
+    if (PROPS_ENABLED) buildPropChips();
     wireTrayAndFlash();
     wireControls();
     // attach face-tracking props to the live preview and start loading the model in the background
-    if (window.BoothProps) {
+    if (PROPS_ENABLED && window.BoothProps) {
       BoothProps.attachPreview(video, propOverlay, () => facingMode);
       BoothProps.load();
     }
@@ -115,8 +118,16 @@
 
   // ---- Tray tabs + flash ----
   function wireTrayAndFlash() {
-    document.getElementById('tabFilters').addEventListener('click', () => switchTray('filters'));
-    document.getElementById('tabProps').addEventListener('click', () => switchTray('props'));
+    if (PROPS_ENABLED) {
+      document.getElementById('tabFilters').addEventListener('click', () => switchTray('filters'));
+      document.getElementById('tabProps').addEventListener('click', () => switchTray('props'));
+    } else {
+      // Props hidden — no tabs, just the Filters strip.
+      const tabs = document.querySelector('.tray-tabs');
+      if (tabs) tabs.style.display = 'none';
+      filtersEl.classList.remove('hidden');
+      propsEl.classList.add('hidden');
+    }
     flashBtn.addEventListener('click', cycleFlash);
     updateFlashUI();
   }
