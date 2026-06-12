@@ -1,0 +1,17 @@
+node_modules/
+uploads/*
+!uploads/.gitkeep
+.env
+.DS_Store
+npm-debug.log*
+
+# Internal brand source files (kept local — not for the public app repo).
+# The logos used by the app already live in branding/.
+brand-files-kk/
+
+# Local scratch/screenshot artifacts
+_*.png
+_*.txt
+
+# Claude Code local settings
+.claude/

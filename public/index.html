@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#1b252f" />
+  <title>Photo Booth</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="brand-header">
+      <img class="logo" id="logo" alt="" hidden />
+      <div class="titles">
+        <h1 id="eventTitle">Photo Booth</h1>
+        <p class="subtitle" id="eventSubtitle"></p>
+      </div>
+      <div class="spacer"></div>
+      <a class="pill-link" href="/gallery">Gallery</a>
+    </header>
+
+    <main>
+      <div class="stage">
+        <!-- Live Polaroid (what-you-see-is-what-you-get) -->
+        <div class="polaroid" id="polaroidLive">
+          <div class="photo-window">
+            <video id="video" playsinline autoplay muted></video>
+            <div class="countdown" id="countdown"></div>
+            <div class="flash" id="flash"></div>
+          </div>
+          <div class="polaroid-caption">
+            <img class="polaroid-logo" id="captionLogo" alt="Knight Knox" />
+          </div>
+        </div>
+        <!-- Review: the finished Polaroid image (border + logo baked in) -->
+        <img id="previewImg" class="preview hidden" alt="Your photo" />
+        <div class="status-msg hidden" id="statusMsg"></div>
+      </div>
+
+      <!-- Filters -->
+      <div class="filters" id="filters"></div>
+
+      <!-- Capture controls (live mode) -->
+      <div class="controls" id="liveControls">
+        <button class="icon-btn" id="flipBtn" title="Switch camera" aria-label="Switch camera">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 9a9 9 0 0 1 15-3.7L21 8"/><path d="M21 4v4h-4"/>
+            <path d="M21 15a9 9 0 0 1-15 3.7L3 16"/><path d="M3 20v-4h4"/>
+          </svg>
+        </button>
+        <button class="shutter" id="shutterBtn" title="Take photo" aria-label="Take photo"></button>
+        <button class="icon-btn" id="timerToggle" title="Toggle 3s countdown" aria-label="Toggle countdown">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 2h6"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Review controls (after capture) -->
+      <div class="review-actions" id="reviewControls">
+        <button class="btn secondary" id="retakeBtn">↩︎ Retake</button>
+        <button class="btn primary" id="uploadBtn">⬆︎ Add to Gallery</button>
+      </div>
+    </main>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <canvas id="canvas" class="hidden"></canvas>
+
+  <script src="/js/app.js"></script>
+</body>
+</html>

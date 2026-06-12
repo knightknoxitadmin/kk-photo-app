@@ -1,0 +1,17 @@
+{
+  "eventTitle": "Knight Knox",
+  "eventSubtitle": "Capture the moment",
+  "logo": "logo.svg",
+  "photoLogo": "logo-grey.svg",
+  "frame": "frame.svg",
+  "background": "",
+  "colors": {
+    "primary": "#1d33ff",
+    "secondary": "#45b6a7",
+    "background": "#1b252f",
+    "text": "#ffffff",
+    "accent": "#45b6a7"
+  },
+  "watermarkText": "",
+  "filters": ["none", "bw", "sepia", "vivid", "vintage", "cool", "warm", "noir"]
+}
