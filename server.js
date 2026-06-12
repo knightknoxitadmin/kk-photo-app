@@ -167,9 +167,19 @@ app.delete('/api/photos/:id', (req, res) => {
 app.get('/gallery', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'gallery.html')));
 app.get('/healthz', (req, res) => res.json({ ok: true }));
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`📸 Party Photo Booth running on port ${PORT}`);
   console.log(`   Booth:   /`);
   console.log(`   Gallery: /gallery`);
   console.log(`   Uploads: ${UPLOADS_DIR}`);
 });
+
+// Graceful shutdown so redeploys/restarts exit cleanly (no SIGTERM error noise).
+// SSE connections are long-lived, so end them first, then close + exit.
+function shutdown(signal) {
+  console.log(`Received ${signal} — shutting down gracefully`);
+  for (const res of clients) { try { res.end(); } catch (e) {} }
+  server.close(() => process.exit(0));
+  setTimeout(() => process.exit(0), 3000).unref();
+}
+['SIGTERM', 'SIGINT'].forEach((sig) => process.on(sig, () => shutdown(sig)));
