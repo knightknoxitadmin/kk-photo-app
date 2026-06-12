@@ -109,6 +109,16 @@ body {
 }
 .photo-window video.mirror { transform: scaleX(-1); }
 
+/* face-tracking props overlay (sits over the live video) */
+.photo-window .prop-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 2;
+}
+
 /* The white caption strip with the Knight Knox logo */
 .polaroid-caption {
   height: 78px;
@@ -172,7 +182,29 @@ body {
   background: linear-gradient(transparent, rgba(0,0,0,0.6));
 }
 
-/* ---------- Filter strip ---------- */
+/* ---------- Filters / Props tray ---------- */
+.tray-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 8px 14px 2px;
+}
+.tray-tab {
+  border: none;
+  background: transparent;
+  color: var(--text);
+  opacity: 0.55;
+  font-weight: 700;
+  font-size: 0.9rem;
+  padding: 6px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.tray-tab.active {
+  opacity: 1;
+  background: color-mix(in srgb, var(--primary) 22%, transparent);
+}
+
+/* ---------- Filter / prop strip ---------- */
 .filters {
   display: flex;
   gap: 10px;
@@ -203,11 +235,12 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 26px;
+  gap: 18px;
   padding: 14px 14px 28px;
 }
 .icon-btn {
-  width: 58px; height: 58px;
+  position: relative;
+  width: 56px; height: 56px;
   border-radius: 50%;
   border: 1px solid rgba(255,255,255,0.2);
   background: rgba(255,255,255,0.1);
@@ -216,6 +249,21 @@ body {
   display: flex; align-items: center; justify-content: center;
   cursor: pointer;
 }
+.icon-btn .btn-badge {
+  position: absolute;
+  top: -3px; right: -3px;
+  min-width: 18px; height: 18px;
+  padding: 0 4px;
+  border-radius: 9px;
+  background: var(--accent);
+  color: #0c1118;
+  font-size: 0.62rem;
+  font-weight: 800;
+  line-height: 18px;
+  text-align: center;
+}
+.icon-btn.flash-off { opacity: 0.55; }
+.icon-btn.flash-off .btn-badge { background: rgba(255,255,255,0.4); }
 .shutter {
   width: 84px; height: 84px;
   border-radius: 50%;
@@ -250,6 +298,18 @@ body {
 .btn:disabled { opacity: 0.6; }
 
 .hidden { display: none !important; }
+
+/* full-screen selfie flash */
+.screen-flash {
+  position: fixed;
+  inset: 0;
+  background: #ffffff;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 200;
+  transition: opacity 0.08s ease;
+}
+.screen-flash.on { opacity: 1; }
 
 .toast {
   position: fixed;

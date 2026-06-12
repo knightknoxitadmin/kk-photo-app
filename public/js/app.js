@@ -31,6 +31,11 @@
   const flashEl = document.getElementById('flash');
   const statusMsg = document.getElementById('statusMsg');
   const filtersEl = document.getElementById('filters');
+  const propsEl = document.getElementById('props');
+  const propOverlay = document.getElementById('propOverlay');
+  const flashBtn = document.getElementById('flashBtn');
+  const flashBadge = document.getElementById('flashBadge');
+  const screenFlash = document.getElementById('screenFlash');
   const liveControls = document.getElementById('liveControls');
   const reviewControls = document.getElementById('reviewControls');
   const shutterBtn = document.getElementById('shutterBtn');
@@ -47,6 +52,7 @@
   let facingMode = 'user';        // 'user' (front) or 'environment' (back)
   let currentFilter = 'none';
   let countdownEnabled = true;
+  let flashMode = 'auto';         // 'auto' | 'on' | 'off'
   let capturedDataUrl = null;
   let photoLogoImage = null;      // preloaded grey logo, stamped in the white Polaroid strip
   let busy = false;
@@ -64,8 +70,66 @@
   async function init() {
     await loadBranding();
     buildFilterChips();
+    buildPropChips();
+    wireTrayAndFlash();
     await startCamera();
     wireControls();
+    // attach face-tracking props to the live preview and start loading the model in the background
+    if (window.BoothProps) {
+      BoothProps.attachPreview(video, propOverlay, () => facingMode);
+      BoothProps.load();
+    }
+  }
+
+  // ---- Props (face-tracking) ----
+  function buildPropChips() {
+    if (!window.BoothProps) return;
+    propsEl.innerHTML = '';
+    BoothProps.PROPS.forEach((p) => {
+      const chip = document.createElement('button');
+      chip.className = 'filter-chip' + (p.key === 'none' ? ' active' : '');
+      chip.innerHTML = (p.emoji ? `<span style="margin-right:5px">${p.emoji}</span>` : '') + p.label;
+      chip.dataset.prop = p.key;
+      chip.addEventListener('click', () => setProp(p.key));
+      propsEl.appendChild(chip);
+    });
+  }
+
+  function setProp(key) {
+    document.querySelectorAll('#props .filter-chip').forEach((c) => {
+      c.classList.toggle('active', c.dataset.prop === key);
+    });
+    BoothProps.setProp(key);
+    if (key !== 'none' && !BoothProps.isReady()) {
+      showToast(BoothProps.hasFailed() ? 'Face props unavailable on this device' : 'Loading face props…');
+    }
+  }
+
+  // ---- Tray tabs + flash ----
+  function wireTrayAndFlash() {
+    document.getElementById('tabFilters').addEventListener('click', () => switchTray('filters'));
+    document.getElementById('tabProps').addEventListener('click', () => switchTray('props'));
+    flashBtn.addEventListener('click', cycleFlash);
+    updateFlashUI();
+  }
+
+  function switchTray(which) {
+    const f = which === 'filters';
+    document.getElementById('tabFilters').classList.toggle('active', f);
+    document.getElementById('tabProps').classList.toggle('active', !f);
+    filtersEl.classList.toggle('hidden', !f);
+    propsEl.classList.toggle('hidden', f);
+  }
+
+  function cycleFlash() {
+    flashMode = flashMode === 'auto' ? 'on' : flashMode === 'on' ? 'off' : 'auto';
+    updateFlashUI();
+    showToast('Flash: ' + flashMode.toUpperCase());
+  }
+
+  function updateFlashUI() {
+    flashBadge.textContent = flashMode === 'auto' ? 'A' : flashMode === 'on' ? 'ON' : '';
+    flashBtn.classList.toggle('flash-off', flashMode === 'off');
   }
 
   // ---- Branding ----
@@ -200,11 +264,59 @@
     if (countdownEnabled) {
       await runCountdown(3);
     }
+
+    // Flash: light the subject before grabbing the frame
+    let endFlash = null;
+    if (shouldFlash()) endFlash = await doFlash();
+
     fireFlash();
     capture();
 
+    if (endFlash) await endFlash();
+
     busy = false;
     shutterBtn.disabled = false;
+  }
+
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+
+  function sampleBrightness() {
+    try {
+      const s = document.createElement('canvas');
+      s.width = 24; s.height = 24;
+      const c = s.getContext('2d');
+      c.drawImage(video, 0, 0, 24, 24);
+      const d = c.getImageData(0, 0, 24, 24).data;
+      let sum = 0;
+      for (let i = 0; i < d.length; i += 4) sum += 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+      return sum / (d.length / 4);
+    } catch (e) {
+      return 255;
+    }
+  }
+
+  function shouldFlash() {
+    if (flashMode === 'on') return true;
+    if (flashMode === 'off') return false;
+    return sampleBrightness() < 95; // auto: only when the scene is dark
+  }
+
+  // Returns a cleanup function to call after the frame is captured.
+  async function doFlash() {
+    const track = stream && stream.getVideoTracks ? stream.getVideoTracks()[0] : null;
+    const caps = track && track.getCapabilities ? track.getCapabilities() : {};
+    // Rear camera with a real torch → use it
+    if (facingMode === 'environment' && caps && caps.torch) {
+      try {
+        await track.applyConstraints({ advanced: [{ torch: true }] });
+        await wait(180);
+        return async () => { try { await track.applyConstraints({ advanced: [{ torch: false }] }); } catch (e) {} };
+      } catch (e) { /* fall through to screen flash */ }
+    }
+    // Selfie / no torch → blast the screen white to light the face
+    screenFlash.classList.add('on');
+    await wait(220);
+    return async () => { await wait(60); screenFlash.classList.remove('on'); };
   }
 
   function runCountdown(from) {
@@ -270,8 +382,19 @@
     ctx.drawImage(video, sx, sy, sw, sh, PAD, PAD, PHOTO, PHOTO);
     ctx.restore();
 
-    // subtle inner edge around the photo for a printed-photo feel
+    // face-tracking props, baked in with the same placement as the live preview
     ctx.filter = 'none';
+    if (window.BoothProps) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(PAD, PAD, PHOTO, PHOTO);
+      ctx.clip();
+      ctx.translate(PAD, PAD);
+      try { BoothProps.drawForCapture(ctx, PHOTO, facingMode); } catch (e) { /* ignore */ }
+      ctx.restore();
+    }
+
+    // subtle inner edge around the photo for a printed-photo feel
     ctx.strokeStyle = 'rgba(0,0,0,0.08)';
     ctx.lineWidth = 2;
     ctx.strokeRect(PAD + 1, PAD + 1, PHOTO - 2, PHOTO - 2);

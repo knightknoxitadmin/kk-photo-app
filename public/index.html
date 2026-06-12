@@ -27,6 +27,7 @@
         <div class="polaroid" id="polaroidLive">
           <div class="photo-window">
             <video id="video" playsinline autoplay muted></video>
+            <canvas id="propOverlay" class="prop-overlay"></canvas>
             <div class="countdown" id="countdown"></div>
             <div class="flash" id="flash"></div>
           </div>
@@ -39,8 +40,15 @@
         <div class="status-msg hidden" id="statusMsg"></div>
       </div>
 
-      <!-- Filters -->
-      <div class="filters" id="filters"></div>
+      <!-- Filters + Props tray -->
+      <div class="tray">
+        <div class="tray-tabs">
+          <button class="tray-tab active" id="tabFilters" data-tray="filters">🎨 Filters</button>
+          <button class="tray-tab" id="tabProps" data-tray="props">🎭 Props</button>
+        </div>
+        <div class="filters" id="filters"></div>
+        <div class="filters hidden" id="props"></div>
+      </div>
 
       <!-- Capture controls (live mode) -->
       <div class="controls" id="liveControls">
@@ -49,6 +57,12 @@
             <path d="M3 9a9 9 0 0 1 15-3.7L21 8"/><path d="M21 4v4h-4"/>
             <path d="M21 15a9 9 0 0 1-15 3.7L3 16"/><path d="M3 20v-4h4"/>
           </svg>
+        </button>
+        <button class="icon-btn" id="flashBtn" title="Flash" aria-label="Flash mode">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+            <path d="M13 2L4.5 13H11l-1 9 8.5-11H12l1-9z"/>
+          </svg>
+          <span class="btn-badge" id="flashBadge">A</span>
         </button>
         <button class="shutter" id="shutterBtn" title="Take photo" aria-label="Take photo"></button>
         <button class="icon-btn" id="timerToggle" title="Toggle 3s countdown" aria-label="Toggle countdown">
@@ -68,8 +82,12 @@
 
   <div class="toast" id="toast"></div>
 
+  <!-- Full-screen selfie flash -->
+  <div class="screen-flash" id="screenFlash"></div>
+
   <canvas id="canvas" class="hidden"></canvas>
 
+  <script src="/js/props.js"></script>
   <script src="/js/app.js"></script>
 </body>
 </html>
