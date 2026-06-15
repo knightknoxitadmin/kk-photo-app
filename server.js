@@ -165,6 +165,7 @@ app.delete('/api/photos/:id', (req, res) => {
 
 // ---- Routes for the two pages -------------------------------------------
 app.get('/gallery', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'gallery.html')));
+app.get('/slideshow', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'slideshow.html')));
 app.get('/healthz', (req, res) => res.json({ ok: true }));
 
 const server = app.listen(PORT, () => {
